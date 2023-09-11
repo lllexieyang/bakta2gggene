@@ -49,8 +49,9 @@ def find_gene_in_bakta(file, gene, out, max_dis):
     output_name = os.path.join(out, f"{gene}_from_{os.path.basename(file)}")
     with open(file, 'r') as input_file, open(output_name, 'w', newline='') as output_file:
         # Skip first two lines
-        next(input_file)
-        next(input_file)
+        if '_from' not in file:
+            next(input_file)
+            next(input_file)
         reader = csv.DictReader(input_file, delimiter='\t')
         writer = csv.DictWriter(output_file, fieldnames=reader.fieldnames, delimiter='\t')
         writer.writeheader()
