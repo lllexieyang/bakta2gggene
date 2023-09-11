@@ -28,7 +28,6 @@ Copy right reserved : Lu Yang (yanglu2016@cau.edu.cn)
 此外，如果通过 ***-m*** 或 ***--merge*** 参数指定了合并，则无视默认规则，执行合并。  
 #### Example：
      python3 bakta2gggene.py -g [gene_name] -i input1.tsv input2.tsv -m
-     python3 bakta2gggene.py -g qacEdelta1 -i newfile.tsv qacEdelta1_from_batch1.tsv --merge
 
 ## 3. Maximum distance from the target gene
 #### Specify the maximum distance for extracting annotation results relative to the target gene.
