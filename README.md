@@ -1,5 +1,5 @@
 # bakta2gggene
-Extract annotation of contigs containing specific gene from [bakta](https://github.com/oschwengers/bakta) results (.tsv).  
+Extract "cds" annotation of contigs containing specific gene from [bakta](https://github.com/oschwengers/bakta) results (.tsv).  
 Generate input file for drawing gene arrow maps with [gggenes](https://cran.r-project.org/web/packages/gggenes/vignettes/introduction-to-gggenes.html).  
   
 Version 1.0  
@@ -35,3 +35,11 @@ Copy right reserved : Lu Yang (yanglu2016@cau.edu.cn)
 #### Example：
     python3 bakta2gggene.py -g [gene_name] -i input1.tsv input2.tsv --merge --max 10000
 > Note: default 5kb  
+
+## 4. Exact match of gene name
+加-e精准匹配基因名（默认为查找指定基因开头的结果）
+#### Extracting gene exactly the same as provided -> mcr-1.1 only
+    python3 bakta2gggene.py -g mcr-1.1 -e 
+#### or extracting genes start with "mcr-1.1" -> mcr-1.1, mcr-1.10, mcr-1.12 et al.
+    python3 bakta2gggene.py -g mcr-1.1 
+> Note: default set is to extract genes start with [gene_name], suitable for gene clusters like xxxA, xxxB, xxxC...
