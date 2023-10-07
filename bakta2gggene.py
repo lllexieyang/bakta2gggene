@@ -139,6 +139,7 @@ def generete_gggene_input(result, out):
         writer.writeheader()
 
         for row in reader:
+            file_name = row['file_name']
             molecule = row['file_name'].replace('.tsv', '') + '_' + row['#Sequence Id']
             start = int(row['Start'])
             end = int(row['Stop'])
@@ -148,9 +149,9 @@ def generete_gggene_input(result, out):
             gene_type = row['Type']
             if gene_type == 'cds':
                 if orientation == '+':
-                    writer.writerow({'molecule': molecule, 'start': start, 'end': end, 'gene': gene, 'orientation': orientation, 'product': product})
+                    writer.writerow({'file_name': file_name, 'molecule': molecule, 'start': start, 'end': end, 'gene': gene, 'orientation': orientation, 'product': product})
                 else:
-                    writer.writerow({'molecule': molecule, 'start': end, 'end': start, 'gene': gene, 'orientation': orientation, 'product': product})
+                    writer.writerow({'file_name': file_name, 'molecule': molecule, 'start': end, 'end': start, 'gene': gene, 'orientation': orientation, 'product': product})
 
 
 def main():
