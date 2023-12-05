@@ -2,8 +2,8 @@
 Extract "cds" annotation of contigs containing specific gene from [bakta](https://github.com/oschwengers/bakta) results (.tsv).  
 Generate input file for drawing gene arrow maps with [gggenes](https://cran.r-project.org/web/packages/gggenes/vignettes/introduction-to-gggenes.html).  
   
-Version 1.0  
-Last change: Sep 11 2023  
+Version 2.0  
+Last change: Dec 5 2023  
 Copy right reserved : Lu Yang (yanglu2016@cau.edu.cn)  
   
 ## 1. Basic usage
@@ -59,3 +59,19 @@ Copy right reserved : Lu Yang (yanglu2016@cau.edu.cn)
 
     python3 bakta2gggene.py -g mcr-1.1 
 > Note: default set is to extract genes start with [gene_name], suitable for gene clusters like xxxA, xxxB, xxxC...
+
+## 5. Extract gene annotations based on a list 
+根据列表提取基因的注释信息（比如ARG_list.txt，每行是一个基因的名字）  
+
+**e.g., ARG_list.txt, where each line is a gene name**  
+
+    python3 bakta2gggene.py -i input1.tsv -l [gene_list_name]
+> ⚠️ Note: Extract only the annotation information for the genes themselves, without extracting the gene environment.  
+>  注意：只提取基因本身的注释信息，不提取基因环境  
+
+### Version Log
+Version 1.0  Sep 11 2023  
+
+Version 2.0  Dec 5 2023  
+New feature: Extract gene annotation results based on a specified list (genes only).  
+2.0版本新增功能：根据指定列表提取基因注释结果（仅基因）
