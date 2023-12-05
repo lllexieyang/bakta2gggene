@@ -24,10 +24,12 @@
 # 4. Exact match of gene name
 #    Extracting genes start with "mcr-1.1" using "-g mcr-1.1" (mcr-1.1, mcr-1.10, et al.)
 #    or with exactly the name provided using "-g mcr-1.1 -e" (mcr-1.1 only)
+# 5. Extract gene annotations based on a list (e.g., ARG_list.txt, where each line is a gene name).
+#       python3 bakta2gggene.py -i input1.tsv -l [gene_list_name]
 
 # Copy right reserved : Lu Yang (yanglu2016@cau.edu.cn)
-# Last change: Sep 11 2023
-# Version 1.0
+# Last change: Dec 5 2023
+# Version 2.0
 
 import os
 import re
@@ -47,6 +49,7 @@ def get_arguments():
                         help="Maximum distance from the target gene, default is 5kb", default="5000")
     parser.add_argument("-e", "--exact", action="store_true", dest="exact",
                         help="gene name provided exactly", default=False)
+    parser.add_argument("-l", "--list", action="store", dest="list_file", help="extract genes from list", default="")
 
     return parser.parse_args()
 
@@ -110,6 +113,34 @@ def find_gene_in_bakta(file, gene, out, max_dis, exact):
     return os.path.basename(file), contigs, output_name
 
 
+def find_genes_in_bakta(file, gene, gene_list, out):
+    output_name = os.path.join(out, f"{gene}_from_{os.path.basename(file)}")
+    contigs = []
+    with open(file, 'r') as input_file, open(output_name, 'w', newline='') as output_file:
+        # Skip first two lines
+        next(input_file)
+        next(input_file)
+        reader = csv.DictReader(input_file, delimiter='\t')
+        writer = csv.DictWriter(output_file, fieldnames=reader.fieldnames, delimiter='\t')
+        writer.writeheader()
+
+        for row in reader:
+            # Check if the gene is in the gene_list
+            if row['Gene'] in gene_list:
+                writer.writerow(row)
+                contigs.append(row['#Sequence Id'])
+
+        if contigs:
+            print(contigs, "from", os.path.basename(file), "were extracted to", os.path.basename(output_name))
+        else:
+            print("No contigs containing any gene from", gene_list, "were found in", file)
+            output_file.close()
+            os.remove(output_name)
+            return None
+
+    return os.path.basename(file), contigs, output_name
+
+
 def merge_results(result_list, out):
     result_names = [info['result_name'] for info in result_list.values() if 'result_name' in info]
     with open(out, 'w', newline='') as output_file:
@@ -157,9 +188,17 @@ def generete_gggene_input(result, out):
 def main():
     options = get_arguments()
 
-    # Check if target gene was provided
-    if not options.gene:
-        print("Error: Please specify the gene using the -g option.")
+    # Check if target gene/gene list was provided
+    if options.gene:
+        gene_name = options.gene
+        print("Extracting annotation results of contigs containing\033[1;31m", gene_name, "\033[0m.")
+    elif options.list_file:
+        with open(options.list_file, 'r') as file:
+            gene_list = [line.strip() for line in file]
+        gene_name = os.path.basename(os.path.splitext(options.list_file)[0])
+        print("Extracting annotation results of genes in \033[1;31m", options.list_file, "\033[0m.")
+    else:
+        print("\033[1;31mERROR:\033[0m Please provide a gene with \033[1;31m-g\033[0m or a gene list with \033[1;31m-l\033[0m.")
         sys.exit(1)
 
     # Get a list of files in the input directory
@@ -172,9 +211,9 @@ def main():
         files = [os.path.join(input_dir, f) for f in os.listdir(input_dir) if f.endswith('.tsv')
                  and '_from' not in f and '_record' not in f]
         merge = True
-    print("Extracting annotation results of contigs containing\033[1;31m", options.gene, "\033[0mfrom\033[1;31m", len(files), "\033[0mfiles.")
+    print("Extracting results from\033[1;31m", len(files), "\033[0mfiles.")
 
-    # Check if the output directory exists, and create it if it doesn't.
+    # Check if the output directory exists, and create one if it doesn't.
     if options.output:
         if os.path.exists(options.output):
             print("Results will be saved in\033[1;31m", options.output, "\033[0m")
@@ -186,18 +225,23 @@ def main():
     records = {}
     for file_name in files:
         if os.path.exists(file_name):
-            record = find_gene_in_bakta(file_name, options.gene, options.output, options.max, options.exact)
+            if options.list_file:
+                record = find_genes_in_bakta(file_name, gene_name, gene_list, options.output)
+            else:
+                record = find_gene_in_bakta(file_name, gene_name, options.output, options.max, options.exact)
             if record:
                 records[len(records) + 1] = {
                     'file_name': record[0],
                     'sequence_id': record[1],
                     'result_name': record[2]}
+        else:
+            print(file_name, "is not found in ", options.direct)
 
     # Save info of records extracted
-    print("Contigs containing\033[1;31m", options.gene, "\033[0mwere found in\033[1;31m", len(records),
+    print("Results of\033[1;31m", gene_name, "\033[0mwere found in\033[1;31m", len(records),
           "\033[0mfiles.")
     if records:
-        records_name = os.path.join(options.output, f"{options.gene}_records.tsv")
+        records_name = os.path.join(options.output, f"{gene_name}_records.tsv")
         with open(records_name, 'w', newline='') as extracted:
             fieldnames = ['file_name', 'sequence_id', 'result_name']
             writer = csv.DictWriter(extracted, fieldnames=fieldnames, delimiter='\t')
@@ -213,15 +257,16 @@ def main():
     if options.merge:
         merge = options.merge
     if merge:
-        merged_name = os.path.join(f"{options.output}/{options.gene}_from_bakta.tsv")
+
+        merged_name = os.path.join(f"{options.output}/{gene_name}_from_bakta.tsv")
         merge_results(records, merged_name)
         print("Results merged ->\033[1;31m", merged_name, "\033[0m")
 
-        # Generate gggene input file
-        gggene_out = os.path.join(f"{options.output}/{options.gene}_to_gggene.csv")
-        generete_gggene_input(merged_name, gggene_out)
-        print("gggene input file generated ->\033[1;31m", gggene_out, "\033[0m")
-
+        # Generate gggene input file if gene env were extracted
+        if options.gene:
+            gggene_out = os.path.join(f"{options.output}/{gene_name}_to_gggene.csv")
+            generete_gggene_input(merged_name, gggene_out)
+            print("gggene input file generated ->\033[1;31m", gggene_out, "\033[0m")
 
     return 0
 
